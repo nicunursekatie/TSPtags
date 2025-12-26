@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Instagram, Mail, User, Heart, Sparkles } from 'lucide-react';
+import { Instagram, Mail, User, Heart, Sparkles, Copy, Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-// ⚠️ YOUR GOOGLE SCRIPT URL IS PRE-FILLED HERE:
+// ⚠️ YOUR GOOGLE SCRIPT URL
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwUTzMnuimAU1RGh7bOS1zA4NVEwXmbJXt0b-mVNJJ8KzfOaJRaaaK_3Smyg4CRaCbH/exec';
-
-const LOGO_URL = '/CMYK_PRINT_TSP-01-01.jpg'; 
+const LOGO_URL = 'https://thesandwichproject.org/wp-content/uploads/2021/08/logo.png'; 
 
 function App() {
   const [companyName, setCompanyName] = useState(null);
   const [eventDate, setEventDate] = useState(null);
+  const [mode, setMode] = useState('volunteer'); // 'volunteer' or 'organizer'
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copied, setCopied] = useState(null); // For copy feedback
+  
+  // Form State
   const [formData, setFormData] = useState({
     name: '',
     instagram: '',
@@ -24,8 +27,11 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const company = params.get('company');
     const dateParam = params.get('date');
+    const modeParam = params.get('mode');
 
     if (company) setCompanyName(decodeURIComponent(company));
+    if (modeParam === 'organizer') setMode('organizer');
+    
     if (dateParam) {
       setEventDate(dateParam);
     } else {
@@ -33,6 +39,34 @@ function App() {
     }
   }, []);
 
+  // --- ORGANIZER MODE LOGIC ---
+  const generateShareLink = () => {
+    const baseUrl = window.location.origin; // Gets 'tsp-tags.vercel.app'
+    let url = `${baseUrl}/?company=${encodeURIComponent(companyName || '')}`;
+    if (eventDate) url += `&date=${eventDate}`;
+    return url;
+  };
+
+  const copyToClipboard = (text, type) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(type);
+      setTimeout(() => setCopied(null), 2000);
+    });
+  };
+
+  const emailDraft = `Hi Team,
+
+Great job volunteering with The Sandwich Project today! We want to make sure you get tagged in the photos.
+
+Click this link to add your Instagram handle (takes 5 seconds):
+${generateShareLink()}
+
+Thanks!`;
+
+  const slackDraft = `Great job today team! 🥪 
+Click here to get tagged in The Sandwich Project photos: ${generateShareLink()}`;
+
+  // --- VOLUNTEER MODE LOGIC ---
   const formatInstagram = (value) => {
     const cleaned = value.replace(/[@\s]/g, '');
     return cleaned ? `@${cleaned}` : '';
@@ -128,45 +162,72 @@ function App() {
       backgroundColor: hasError ? '#fef2f2' : '#f3f4f6',
       fontSize: '16px',
       outline: 'none',
-      boxSizing: 'border-box', // Crucial for padding
+      boxSizing: 'border-box',
       transition: 'all 0.2s',
     }),
     icon: {
-      position: 'absolute',
-      left: '16px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      color: '#47b3cb',
-      width: '20px',
-      height: '20px',
+      position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#47b3cb', width: '20px', height: '20px',
     },
     button: {
-      width: '100%',
-      backgroundColor: '#236383',
-      color: 'white',
-      fontWeight: 'bold',
-      padding: '16px',
-      borderRadius: '12px',
-      border: 'none',
-      fontSize: '16px',
-      cursor: isSubmitting ? 'not-allowed' : 'pointer',
-      opacity: isSubmitting ? 0.7 : 1,
-      marginTop: '10px',
-      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+      width: '100%', backgroundColor: '#236383', color: 'white', fontWeight: 'bold', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '16px', cursor: isSubmitting ? 'not-allowed' : 'pointer', opacity: isSubmitting ? 0.7 : 1, marginTop: '10px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    },
+    copyButton: {
+      width: '100%', backgroundColor: '#f3f4f6', color: '#374151', fontWeight: '600', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '14px', cursor: 'pointer', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s'
     },
     errorText: { color: '#a31c41', fontSize: '12px', marginTop: '4px', marginLeft: '4px' },
     checkboxLabel: {
-      display: 'flex',
-      alignItems: 'flex-start',
-      gap: '10px',
-      fontSize: '12px',
-      color: '#6b7280',
-      lineHeight: '1.5',
-      marginBottom: '20px',
-      cursor: 'pointer',
+      display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '12px', color: '#6b7280', lineHeight: '1.5', marginBottom: '20px', cursor: 'pointer',
     }
   };
 
+  // --- RENDER: ORGANIZER VIEW ---
+  if (mode === 'organizer') {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={{textAlign: 'center', marginBottom: '24px'}}>
+            <img src={LOGO_URL} alt="Logo" style={{height: '60px', margin: '0 auto 16px', objectFit: 'contain'}} />
+            <h1 style={{color: '#236383', fontSize: '20px', fontWeight: 'bold', lineHeight: '1.2'}}>
+              Organizer Dashboard
+            </h1>
+            <p style={{color: '#47b3cb', fontSize: '14px', marginTop: '8px'}}>
+              Share these links with the {companyName || 'volunteer'} team
+            </p>
+          </div>
+
+          <div style={{background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '20px', border: '1px dashed #cbd5e1'}}>
+            <p style={{fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '8px'}}>Option 1: Send via Email</p>
+            <button 
+              onClick={() => copyToClipboard(emailDraft, 'email')}
+              style={{...styles.copyButton, backgroundColor: copied === 'email' ? '#dcfce7' : '#e2e8f0', color: copied === 'email' ? '#166534' : '#334155'}}
+            >
+              {copied === 'email' ? <Check size={18}/> : <Mail size={18}/>}
+              {copied === 'email' ? 'Copied to Clipboard!' : 'Copy Email Draft'}
+            </button>
+          </div>
+
+          <div style={{background: '#f8fafc', padding: '16px', borderRadius: '12px', marginBottom: '20px', border: '1px dashed #cbd5e1'}}>
+            <p style={{fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '8px'}}>Option 2: Send via Slack/Teams</p>
+            <button 
+              onClick={() => copyToClipboard(slackDraft, 'slack')}
+              style={{...styles.copyButton, backgroundColor: copied === 'slack' ? '#dcfce7' : '#e2e8f0', color: copied === 'slack' ? '#166534' : '#334155'}}
+            >
+              {copied === 'slack' ? <Check size={18}/> : <Copy size={18}/>}
+              {copied === 'slack' ? 'Copied to Clipboard!' : 'Copy Slack Message'}
+            </button>
+          </div>
+
+          <div style={{marginTop: '24px', textAlign: 'center'}}>
+             <a href={generateShareLink()} target="_blank" rel="noopener noreferrer" style={{fontSize: '14px', color: '#236383', textDecoration: 'underline'}}>
+               Preview the Volunteer Form →
+             </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- RENDER: SUCCESS VIEW ---
   if (isSubmitted) {
     return (
       <div style={styles.container}>
@@ -190,6 +251,7 @@ function App() {
     );
   }
 
+  // --- RENDER: VOLUNTEER FORM ---
   return (
     <div style={styles.container}>
       <div style={styles.card}>
