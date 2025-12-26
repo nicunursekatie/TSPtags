@@ -5,9 +5,7 @@ import confetti from 'canvas-confetti';
 // ⚠️ YOUR GOOGLE SCRIPT URL IS PRE-FILLED HERE:
 const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwUTzMnuimAU1RGh7bOS1zA4NVEwXmbJXt0b-mVNJJ8KzfOaJRaaaK_3Smyg4CRaCbH/exec';
 
-// ⚠️ REPLACE THIS with a real image URL when you can. 
-// For now, it points to a placeholder so it doesn't break.
-const LOGO_URL = 'https://thesandwichproject.org/wp-content/uploads/2021/08/logo.png'; 
+const LOGO_URL = '/CMYK_PRINT_TSP-01-01.jpg'; 
 
 function App() {
   const [companyName, setCompanyName] = useState(null);
